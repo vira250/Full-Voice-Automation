@@ -8,6 +8,7 @@ import smtplib
 import tkinter as tk
 from tkinter import Label
 from datetime import datetime
+import random
 
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
@@ -26,6 +27,15 @@ def wishme():
     elif 18 <= hour < 22:
         speak("Good Evening my dear friend")
     speak("Say 'assistant' to activate me.")
+
+def update_wave():
+    if canvas.winfo_exists():  # Ensure canvas exists
+        canvas.delete("all")
+        for i in range(10):
+            height = random.randint(5, 30)
+            canvas.create_rectangle(i * 20 + 10, 40 - height, i * 20 + 25, 40 + height, fill='blue')
+        root.update_idletasks()  # Ensure UI refresh
+        root.after(100, update_wave)
 
 def takecommand():
     r = sr.Recognizer()
@@ -131,6 +141,10 @@ label.pack(pady=20)
 
 status_label = Label(root, text="Waiting for activation...", font=("Arial", 12))
 status_label.pack(pady=10)
+
+canvas = tk.Canvas(root, width=200, height=80, bg="white")
+canvas.pack(pady=10)
+update_wave()
 
 wishme()
 
