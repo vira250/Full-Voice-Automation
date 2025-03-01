@@ -7,10 +7,11 @@ import os
 import smtplib
 import re  # For email validation
 import tkinter as tk
-from tkinter import Label
+from tkinter import *
 from datetime import datetime
 import random
-
+import time
+print(time.strftime("%H:%M:%S"))
 # Initialize speech engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
@@ -20,15 +21,28 @@ def speak(audio):
     engine.say(audio)
     engine.runAndWait()
 
+def get_user_name():
+    global user_name
+    speak("What should I call you?")
+    name = takecommand()
+    if name and name != "None":
+        user_name = name.capitalize()
+        speak(f"Alright, I will call you {user_name}.")
+
+
 def wishme():
     hour = int(datetime.now().hour)
-    if 8 <= hour < 12:
-        speak("Good Morning my dear friend")
+    if 0 <= hour < 12:
+        speak(f"Good Morning {user_name}")
     elif 12 <= hour < 18:
-        speak("Good Afternoon my dear friend")
-    elif 18 <= hour < 22:
-        speak("Good Evening my dear friend")
-    speak("Say ' hey sage' to activate me.")
+        speak(f"Good Afternoon {user_name}")
+    elif 18 <= hour < 23:
+        speak(f"Good Evening {user_name}")
+    else:
+        speak(f"Hello {user_name}")
+
+    speak("Say 'hey sage' to activate me.")
+
 
 def update_wave():
     if canvas.winfo_exists():
@@ -173,12 +187,29 @@ def perform_task(query):
             print(e)
             speak("Sorry, I couldn't send the email.")
 
+
     elif 'exit' in query or 'stop' in query:
         speak("Goodbye my friend!")
+        os._exit(0)
         root.quit()
-
     else:
         speak("I didn't understand. Can you please repeat?")
+
+
+# Ask if user needs anything else
+def ask_for_more():
+    speak("Do you need anything else?")  # ✅ This already prints in `chat_box`
+
+    response = takecommand().strip()
+    if any(word in response for word in ["yes", "yeah", "sure", "okay", "yup", "of course"]):
+        speak("Okay, what do you need?")
+        command = takecommand()
+        if command != "None":
+            perform_task(command)
+    else:
+        speak("Okay, I'll be here when you need me. Just say 'Nova'.")
+
+
 
 def assistant_loop():
     while True:
@@ -204,7 +235,9 @@ canvas = tk.Canvas(root, width=200, height=80, bg="white")
 canvas.pack(pady=10)
 update_wave()
 
+get_user_name()
 wishme()
+
 
 # Run assistant loop continuously
 root.after(1000, assistant_loop)
