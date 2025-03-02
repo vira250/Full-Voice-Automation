@@ -1,85 +1,63 @@
-
 import pyttsx3
 import speech_recognition as sr
 import wikipedia
 import webbrowser
 import os
 import smtplib
-import re  # For email validation
+import re  
 import tkinter as tk
-from tkinter import *
+from tkinter import Label, Text, Scrollbar, END, Frame, BOTH, Button, PhotoImage
 from datetime import datetime
-import random
 import time
+import requests
 import pywhatkit as kit
 import pyautogui
-import fnmatch
 
-print(time.strftime("%H:%M:%S"))
 # Initialize speech engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[1].id)
 
-def speak(audio):
-    chat_box.insert(END, "NOVA: ", "nova")  # Start typing effect
-    root.update()
+user_name = "User"
 
+API_KEY = "ac153b54bb4ac582c90f4b9f2dd2fa3f"
+BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
+NEWS_API_KEY = "3a61ba9c823946e593aecd921785aacf"
+
+# Speak function
+def speak(audio):
+    chat_box.insert(END, "NOVA: ", "nova") 
+    root.update()
+    
     for letter in audio:
         chat_box.insert(END, letter, "nova")
         root.update()
         time.sleep(0.02)  # Adjust typing speed (lower = faster)
-
-    chat_box.insert(END, "\n")  # Move to the next line
+    
+    chat_box.insert(END, "\n")  
     chat_box.yview(END)
+    
     engine.say(audio)
     engine.runAndWait()
 
-def get_user_name():
-    global user_name
-    speak("What should I call you?")
-    name = takecommand()
-    if name and name != "None":
-        user_name = name.capitalize()
-        speak(f"Alright, I will call you {user_name}.")
 
-
-def wishme():
-    hour = int(datetime.now().hour)
-    if 0 <= hour < 12:
-        speak(f"Good Morning {user_name}")
-    elif 12 <= hour < 18:
-        speak(f"Good Afternoon {user_name}")
-    elif 18 <= hour < 23:
-        speak(f"Good Evening {user_name}")
-    else:
-        speak(f"Hello {user_name}")
-
-    speak("Say Nova to activate me.")
-
-
-def takecommand():
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        status_label.config(text="Listening...")
-        root.update()
-        r.pause_threshold = 1
-        audio = r.listen(source)
-
+#def
+def get_definition(word):
     try:
-            query = r.recognize_google(audio, language='en-IN').lower()
-            chat_box.insert(END, f"You: {query}\n", "user")
-            # smooth_scroll()  # 🔥 Call smooth scrolling
-            return query
-    except sr.UnknownValueError:
-            return "None"
-    except sr.RequestError:
-            speak("Sorry, I couldn't connect to Google services.")
-            return "None"
-# def smooth_scroll():
-#     chat_box.yview_moveto(1.0)  # Move to the bottom gradually
-#     root.update_idletasks()
-#     root.after(10, smooth_scroll)  # Keep running every 10ms
+        url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+            first_meaning = data[0]["meanings"][0]["definitions"][0]["definition"]
+            return f"The definition of {word} is: {first_meaning}."
+        else:
+            return "Sorry, I couldn't find the definition for that word."
+    except Exception as e:
+        return "Something went wrong while fetching the definition."
+
+
+#email
 def sendEmail(to, content):
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -206,7 +184,180 @@ def find_and_open_file():
             speak("I couldn't find the file. Please try again.")
             break  # Exit if no file is found
 
+#quotes
+def get_random_quote():
+    try:
+        url = "https://zenquotes.io/api/random"
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            quote = data[0].get("q", "No quote found.")
+            author = data[0].get("a", "Unknown")
+            return f"Here's a quote: \"{quote}\" - {author}"
+        else:
+            return "Sorry, I couldn't fetch a quote right now."
+    except Exception as e:
+        return "Something went wrong while fetching a quote."
+
+
+#cal
+def calculate_math(expression):
+    try:
+        # Remove any unwanted characters for safety
+        expression = re.sub(r'[^0-9+\-*/().]', '', expression)
+
+        result = eval(expression)  # Simple calculation
+        speak(f"The answer is {result}")
+    except Exception as e:
+        speak("Sorry, I couldn't calculate that.")
+
+#weather
+def get_weather(city):
+    url = f"{BASE_URL}?q={city}&appid={API_KEY}&units=metric"
+    
+    try:
+        response = requests.get(url)
+        data = response.json()
+
+        if data.get("cod") == 200:
+            temp = data["main"]["temp"]
+            condition = data["weather"][0]["description"]
+            speak(f"The temperature in {city} is {temp} degrees Celsius with {condition}.")
+        else:
+            speak("I couldn't find the weather for that location.")
+    except Exception as e:
+        print(f"Error: {e}")  # Debugging: Print the error
+        speak("Sorry, I couldn't retrieve the weather data.")
+
+
+#news
+def get_news():
+    
+    url_top_headlines = f"https://newsapi.org/v2/top-headlines?country=in&apiKey={NEWS_API_KEY}"
+    response = requests.get(url_top_headlines).json()
+
+    if response["totalResults"] > 0:
+        articles = response["articles"]
+    else:
+        url_everything = f"https://newsapi.org/v2/everything?q=india&apiKey={NEWS_API_KEY}"
+        response = requests.get(url_everything).json()
+        
+        if response["totalResults"] > 0:
+            articles = response["articles"]
+        else:
+            url_source = f"https://newsapi.org/v2/top-headlines?sources=the-times-of-india&apiKey={NEWS_API_KEY}"
+            response = requests.get(url_source).json()
+            
+            if response["totalResults"] > 0:
+                articles = response["articles"]
+            else:
+                return "No news found."
+
+    # Format the first few articles (limit to 3)
+    news_list = []
+    for i, article in enumerate(articles[:3]):
+        news_list.append(f"{i+1}. {article['title']} - {article['source']['name']}")
+    return "\n".join(news_list)
+    
+
+# Take voice command
+def takecommand():
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        status_label.config(text="Listening...", fg="green")
+        root.update()
+        r.pause_threshold = 1
+        audio = r.listen(source)
+
+        try:
+            query = r.recognize_google(audio, language='en-IN').lower()
+            if query:
+                chat_box.insert(END, f"You: {query}\n", "user")
+                return query
+        except sr.UnknownValueError:
+            speak("Sorry, I didn't catch that. Can you repeat?")
+            return ""  # Return empty string instead of "None"
+        except sr.RequestError:
+            speak("Sorry, I couldn't connect to Google services.")
+            return ""
+
+    return ""
+
+
+def smooth_scroll():
+    chat_box.after(100, lambda: chat_box.yview_moveto(1.0)) 
+
+
+# Ask for user's name
+def get_user_name():
+    global user_name
+    speak("What should I call you?")
+    name = takecommand()
+    if name and name != "None":
+        user_name = name.capitalize()
+        speak(f"Alright, I will call you {user_name}.")
+        #chat_box.insert(END, f"NOVA: Alright, I will call you {user_name}.\n", "nova")
+        
+
+#joke
+def tell_joke():
+    try:
+        url = "https://icanhazdadjoke.com/"
+        headers = {"Accept": "application/json"}
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            joke = response.json()["joke"]
+            speak(joke)
+        else:
+            speak("Sorry, I couldn't fetch a joke right now.")
+
+    except Exception as e:
+        speak("Something went wrong while fetching a joke.")
+
+
+def get_date_info():
+    today = datetime.today()
+    day_name = today.strftime("%A")  # Full weekday name (e.g., Sunday)
+    formatted_date = today.strftime("%B %d, %Y")  # Example: March 2, 2025
+    return f"Today is {day_name}, {formatted_date}."
+
+def get_day_info():
+    today = datetime.today()
+    return f"It's {today.strftime('%A')}."
+
+
+#fact
+def tell_fun_fact():
+    try:
+        url = "https://uselessfacts.jsph.pl/random.json?language=en"
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            fact = response.json()["text"]
+            speak(f"Here's a fun fact: {fact}")
+        else:
+            speak("Sorry, I couldn't fetch a fun fact right now.")
+
+    except Exception as e:
+        speak("Something went wrong while fetching a fun fact.")
+
+
+# Wishing function
+def wishme():
+    hour = datetime.now().hour
+    if 5 <= hour < 12:
+        speak(f"Good Morning {user_name}")
+    elif 12 <= hour < 18:
+        speak(f"Good Afternoon {user_name}")
+    elif 18 <= hour < 24:
+        speak(f"Good Evening {user_name}")
+    speak("Say 'hey nova' to activate me.")
+
+# Perform tasks based on command
 def perform_task(query):
+    smooth_scroll()
     if 'wikipedia' in query:
         speak("Searching Wikipedia...")
         query = query.replace("wikipedia", "")
@@ -294,38 +445,74 @@ def perform_task(query):
         speak(f"Goodbye {user_name}")
         os._exit(0)
         root.quit()
+    elif 'joke' in query or 'tell me a joke' in query:
+        tell_joke()
+    elif 'fun fact' in query or 'tell me a fun fact' in query:
+        tell_fun_fact()
+    elif 'calculate' in query:
+        expression = query.replace("calculate", "").strip()
+        calculate_math(expression)
+    elif 'weather' in query:
+        speak("Which city?")
+        city = takecommand()
+        if city != "None":
+            get_weather(city)
+    elif "news" in query:
+        speak("Fetching the latest news from India...")
+        news = get_news()
+        speak(news)
+    elif "date" in query:
+        speak(get_date_info())
+    elif "day" in query:
+        speak(get_day_info())
+    elif "define" in query or "meaning of" in query:
+        word = query.replace("define", "").replace("meaning of", "").strip()
+        if word:
+            speak(get_definition(word))
+        else:
+            speak("Which word would you like me to define?")
+            word = takecommand()
+            if word != "None":
+                speak(get_definition(word))
+    elif "quote" in query or "inspire me" in query:
+        quote = get_random_quote()
+        speak(quote)
     else:
-        speak("I didn't understand. Can you please repeat?")
+        speak("I'm not sure how to do that.")
     ask_for_more()
 
-
+# Ask if user needs anything else
 def ask_for_more():
-    speak("Do you need anything else?")  # ✅ This already prints in `chat_box`
+    speak("Do you need anything else?")  
+    response = takecommand().strip()
 
-    response = takecommand().strip().lower()
-    if any(word in response for word in [ "yeah", "sure", "okay", "yup", "of course" , "yes" , "yes please" ]):
+    if any(word in response for word in ["yeah", "sure", "okay", "yup", "of course", "yes"]):
         speak("Okay, what do you need?")
         command = takecommand()
         if command != "None":
             perform_task(command)
     else:
-        speak("Okay, I'll be here when you need me. Just say 'Nova'.")
+        speak("Okay, I'll be here when you need me. Just say 'NOVA'")
         listen_for_activation()
-    
 
+# Listen for activation command
 def listen_for_activation():
     while True:
         query = takecommand()
-        if any(word in query for word in ["nova"]):
-            speak("Yes? How can I help?")  # ✅ No need to insert separately
+        if query and any(word in query for word in ["hey nova", "hi nova", "yo nova", "nova", "sup nova"]):
+            speak("Yes? How can I help?")  
             command = takecommand()
-            if command != "None":
+            if command and command != "None":
                 perform_task(command)
+            break  # Exit the loop to prevent infinite recursion
+
 
 # Toggle light/dark mode
 def toggle_theme():
     global dark_mode
     dark_mode = not dark_mode
+
+    # Update colors
     bg_color = "#2C2F33" if dark_mode else "white"
     text_color = "white" if dark_mode else "black"
     nova_color = "pink" if dark_mode else "green"
@@ -334,10 +521,15 @@ def toggle_theme():
     frame.configure(bg=bg_color)
     chat_box.configure(bg=bg_color, fg=text_color)
     chat_box.tag_config("nova", foreground=nova_color)
-    chat_box.tag_config("user", foreground=text_color)  # ✅ Ensures user text matches theme
+    chat_box.tag_config("user", foreground=text_color)  
     status_label.configure(bg=bg_color, fg=text_color)
-    theme_button.config(bg=bg_color, activebackground=bg_color)
-    header_label.config(bg=bg_color, fg=text_color)  # ✅ Matches the background
+    header_label.config(bg=bg_color, fg=text_color)  
+
+    # **Change the theme button icon**
+    theme_button.config(image=moon_icon if not dark_mode else sun_icon, 
+                        bg=bg_color, 
+                        activebackground=bg_color)
+
 
 # Create UI
 root = tk.Tk()
@@ -345,12 +537,11 @@ root.title("NOVA - Voice Assistant")
 root.geometry("700x550")
 
 # Load icons
-sun_icon = PhotoImage(file="sun.png")
-moon_icon = PhotoImage(file="moon.png")
+sun_icon = PhotoImage(file="sun1.png")
+moon_icon = PhotoImage(file="moon-phase.png")
 
 dark_mode = False  
 
-# Header label with transparent background
 header_label = Label(root, text="NOVA - Voice Assistant", font=("Arial", 14, "bold"), bd=0, highlightthickness=0)
 header_label.pack(pady=5)
 
@@ -371,16 +562,16 @@ speak(welcome_message)
 status_label = Label(root, text="Waiting for activation...", font=("Arial", 12), bg="white", fg="black")
 status_label.pack(pady=10)
 
-# Smaller and transparent toggle button
 theme_button = Button(root, image=moon_icon, command=toggle_theme, bd=0, bg=root.cget("bg"), activebackground=root.cget("bg"))
-theme_button.config(width=25, height=25)  # Adjust size
+theme_button.config(width=25, height=25) 
 theme_button.place(relx=0.95, rely=0.02, anchor="ne")
 
+# Main assistant loop
 def assistant_loop():
     get_user_name()
     wishme()
     listen_for_activation()
 
-# Run assistant loop continuously
+
 root.after(1000, assistant_loop)
 root.mainloop()
