@@ -271,7 +271,7 @@ def takecommand():
         audio = r.listen(source)
 
         try:
-            query = r.recognize_google(audio, language='en-IN').lower()
+            query = r.recognize_google(audio, language='en-US').lower()
             if query:
                 chat_box.insert(END, f"You: {query}\n", "user")
                 return query
@@ -432,7 +432,7 @@ def perform_task(query):
             print(e)
             speak("Sorry, I couldn't send the email.")
 
-    elif 'send whatsapp message' in query:
+    elif 'send message' in query:
         send_whatsapp_message()
 
     elif 'play song' in query or 'play song on youtube' in query:
