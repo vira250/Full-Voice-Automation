@@ -285,8 +285,6 @@ def take_screenshot():
 
     return filepath  # Return the file path for debugging
 # === SCREEN RECORDING FUNCTIONS ===
-recording_event = threading.Event()
-recording_thread = None
 
 
 # Take voice command
