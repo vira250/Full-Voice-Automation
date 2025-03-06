@@ -12,7 +12,9 @@ import time
 import requests
 import pywhatkit as kit
 import pyautogui
-
+import cv2
+import numpy as np
+import threading
 # Initialize speech engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
@@ -261,6 +263,34 @@ def get_news():
     return "\n".join(news_list)
     
 
+def take_screenshot():
+    """Takes a screenshot and saves it in the OneDrive Screenshots folder"""
+
+    # Define the correct OneDrive Screenshots folder path
+    one_drive_screenshots_folder = os.path.join(os.path.expanduser("~"), "OneDrive", "Pictures", "Screenshots")
+
+    # Ensure the folder exists
+    os.makedirs(one_drive_screenshots_folder, exist_ok=True)
+
+    # Generate a timestamped filename
+    filename = f"screenshot_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    filepath = os.path.join(one_drive_screenshots_folder, filename)
+
+    # Capture and save the screenshot
+    screenshot = pyautogui.screenshot()
+    screenshot.save(filepath)
+
+    # Print and speak the confirmation
+    confirmation_text = f"📸 Screenshot saved at: {filepath}"
+    print(confirmation_text)
+    speak(confirmation_text)
+
+    return filepath  # Return the file path for debugging
+# === SCREEN RECORDING FUNCTIONS ===
+recording_event = threading.Event()
+recording_thread = None
+
+
 # Take voice command
 def takecommand():
     r = sr.Recognizer()
@@ -296,7 +326,7 @@ def get_user_name():
     name = takecommand()
     if name and name != "None":
         user_name = name.capitalize()
-        speak(f"Alright, I will call you {user_name}.")
+        # speak(f"Alright, I will call you {user_name}.")
         #chat_box.insert(END, f"NOVA: Alright, I will call you {user_name}.\n", "nova")
         
 
@@ -477,6 +507,9 @@ def perform_task(query):
     elif "quote" in query or "inspire me" in query:
         quote = get_random_quote()
         speak(quote)
+    elif "screenshot" in query:
+        take_screenshot()
+        speak("screenshort saved successfully at pictures folder")
     else:
         speak("I'm not sure how to do that.")
     ask_for_more()
@@ -493,7 +526,8 @@ def ask_for_more():
             perform_task(command)
     else:
         speak("Okay, I'll be here when you need me. Just say 'NOVA'")
-        listen_for_activation()
+        # listen_for_activation()
+        os._exit(0)
 
 # Listen for activation command
 def listen_for_activation():
@@ -529,8 +563,6 @@ def toggle_theme():
     theme_button.config(image=moon_icon if not dark_mode else sun_icon, 
                         bg=bg_color, 
                         activebackground=bg_color)
-
-
 # Create UI
 root = tk.Tk()
 root.title("NOVA - Voice Assistant")
@@ -571,7 +603,5 @@ def assistant_loop():
     get_user_name()
     wishme()
     listen_for_activation()
-
-
 root.after(1000, assistant_loop)
 root.mainloop()
