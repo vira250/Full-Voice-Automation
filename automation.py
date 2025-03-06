@@ -12,9 +12,7 @@ import time
 import requests
 import pywhatkit as kit
 import pyautogui
-import cv2
-import numpy as np
-import threading
+
 # Initialize speech engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
