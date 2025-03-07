@@ -574,40 +574,12 @@ def listen_for_activation():
                 perform_task(command)
             break  # Exit the loop to prevent infinite recursion
 
-
-def toggle_theme():
-    """Toggle between light and dark mode and update UI elements accordingly."""
-    global dark_mode
-    dark_mode = not dark_mode
-    
-    # Define theme colors
-    theme_colors = {
-        True: {"bg": "#2C2F33", "fg": "white", "nova": "pink", "button_icon": sun_icon},
-        False: {"bg": "white", "fg": "black", "nova": "green", "button_icon": moon_icon}
-    }
-    
-    colors = theme_colors[dark_mode]
-
-    # Apply theme
-    root.configure(bg=colors["bg"])
-    frame.configure(bg=colors["bg"])
-    chat_box.configure(bg=colors["bg"], fg=colors["fg"])
-    chat_box.tag_config("nova", foreground=colors["nova"])
-    chat_box.tag_config("user", foreground=colors["fg"])
-    status_label.configure(bg=colors["bg"], fg=colors["fg"])
-    header_label.config(bg=colors["bg"], fg=colors["fg"])
-    
-    # Update theme button icon
-    theme_button.config(image=colors["button_icon"], bg=colors["bg"], activebackground=colors["bg"])
-
 # Initialize Tkinter window
 root = tk.Tk()
 root.title("NOVA - Voice Assistant")
 root.geometry("700x550")
 
-# Load icons and store them to prevent garbage collection
-sun_icon = PhotoImage(file="sun1.png")
-moon_icon = PhotoImage(file="moon-phase.png")
+
 
 dark_mode = False  # Default theme: Light mode
 
@@ -638,10 +610,7 @@ speak(welcome_message)  # Uncomment if speak function is defined
 status_label = Label(root, text="Waiting for activation...", font=("Arial", 12), bg="white", fg="black")
 status_label.pack(pady=10)
 
-# Theme toggle button
-theme_button = Button(root, image=moon_icon, command=toggle_theme, bd=0, bg=root.cget("bg"), activebackground=root.cget("bg"))
-theme_button.config(width=25, height=25)
-theme_button.place(relx=0.95, rely=0.02, anchor="ne")
+
 
 
 # Main assistant loop
