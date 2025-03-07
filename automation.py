@@ -12,7 +12,7 @@ import time
 import requests
 import pywhatkit as kit
 import pyautogui
-
+import subprocess
 # Initialize speech engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
@@ -40,6 +40,42 @@ def speak(audio):
     engine.say(audio)
     engine.runAndWait()
 
+# Dictionary mapping system applications to their execution commands
+apps = {
+    "notepad": "notepad.exe",
+    "calculator": "calc.exe",
+    "command prompt": "cmd.exe",
+    "file explorer": "explorer.exe",
+    "task manager": "taskmgr.exe",
+    "paint": "mspaint.exe",
+    "wordpad": "write.exe",
+    "media player": "wmplayer.exe",
+    "control panel": "control.exe",
+    "device manager": "devmgmt.msc",
+    "disk cleanup": "cleanmgr.exe",
+    "disk management": "diskmgmt.msc",
+    "event viewer": "eventvwr.msc",
+    "power options": "powercfg.cpl",
+    "registry editor": "regedit.exe",
+    "services": "services.msc",
+    "system information": "msinfo32.exe",
+    "task scheduler": "taskschd.msc",
+    "windows security": "start windowsdefender:",
+    "snipping tool": "snippingtool.exe",
+    "settings": "start ms-settings:",
+    "edge": "start msedge",
+    "chrome": " start chrome",
+    "firefox": "firefox.exe",
+    "vlc": "vlc.exe",
+}
+
+def open_app(query):
+    """Function to open system apps based on voice command"""
+    for app in apps:
+        if app in query:
+            subprocess.run(apps[app], shell=True)
+            return f"Opening {app}"
+    return "Application not found!"
 
 #def
 def get_definition(word):
@@ -394,7 +430,6 @@ def perform_task(query):
     elif 'open notepad' in query:
         os.startfile("C:\\Windows\\System32\\notepad.exe")
         speak("opening notepad")
-
     elif 'open calculator' in query:
         os.startfile("calc.exe")
         speak("opening calculator")
@@ -506,6 +541,9 @@ def perform_task(query):
     elif "screenshot" in query:
         take_screenshot()
         speak("screenshort saved successfully at pictures folder")
+    elif 'open' in query:
+            response = open_app(query)
+            speak(response)
     else:
         speak("I'm not sure how to do that.")
     ask_for_more()
@@ -537,62 +575,74 @@ def listen_for_activation():
             break  # Exit the loop to prevent infinite recursion
 
 
-# Toggle light/dark mode
 def toggle_theme():
+    """Toggle between light and dark mode and update UI elements accordingly."""
     global dark_mode
     dark_mode = not dark_mode
+    
+    # Define theme colors
+    theme_colors = {
+        True: {"bg": "#2C2F33", "fg": "white", "nova": "pink", "button_icon": sun_icon},
+        False: {"bg": "white", "fg": "black", "nova": "green", "button_icon": moon_icon}
+    }
+    
+    colors = theme_colors[dark_mode]
 
-    # Update colors
-    bg_color = "#2C2F33" if dark_mode else "white"
-    text_color = "white" if dark_mode else "black"
-    nova_color = "pink" if dark_mode else "green"
+    # Apply theme
+    root.configure(bg=colors["bg"])
+    frame.configure(bg=colors["bg"])
+    chat_box.configure(bg=colors["bg"], fg=colors["fg"])
+    chat_box.tag_config("nova", foreground=colors["nova"])
+    chat_box.tag_config("user", foreground=colors["fg"])
+    status_label.configure(bg=colors["bg"], fg=colors["fg"])
+    header_label.config(bg=colors["bg"], fg=colors["fg"])
+    
+    # Update theme button icon
+    theme_button.config(image=colors["button_icon"], bg=colors["bg"], activebackground=colors["bg"])
 
-    root.configure(bg=bg_color)
-    frame.configure(bg=bg_color)
-    chat_box.configure(bg=bg_color, fg=text_color)
-    chat_box.tag_config("nova", foreground=nova_color)
-    chat_box.tag_config("user", foreground=text_color)  
-    status_label.configure(bg=bg_color, fg=text_color)
-    header_label.config(bg=bg_color, fg=text_color)  
-
-    # **Change the theme button icon**
-    theme_button.config(image=moon_icon if not dark_mode else sun_icon, 
-                        bg=bg_color, 
-                        activebackground=bg_color)
-# Create UI
+# Initialize Tkinter window
 root = tk.Tk()
 root.title("NOVA - Voice Assistant")
 root.geometry("700x550")
 
-# Load icons
+# Load icons and store them to prevent garbage collection
 sun_icon = PhotoImage(file="sun1.png")
 moon_icon = PhotoImage(file="moon-phase.png")
 
-dark_mode = False  
+dark_mode = False  # Default theme: Light mode
 
+# Header label
 header_label = Label(root, text="NOVA - Voice Assistant", font=("Arial", 14, "bold"), bd=0, highlightthickness=0)
 header_label.pack(pady=5)
 
+# Chat frame
 frame = Frame(root, bg="white")
 frame.pack(padx=10, pady=5, fill=BOTH, expand=True)
 
+# Chatbox
 chat_box = Text(frame, wrap="word", height=20, width=70, font=("Arial", 12), bg="white", fg="black")
 scrollbar = Scrollbar(frame, command=chat_box.yview)
 chat_box.config(yscrollcommand=scrollbar.set)
 scrollbar.pack(side="right", fill="y")
 chat_box.pack(side="left", fill="both", expand=True)
+
+# Text color configurations
 chat_box.tag_config("user", foreground="black")
-chat_box.tag_config("nova", foreground="green") 
+chat_box.tag_config("nova", foreground="gray")
+
+# Welcome message
 welcome_message = "Hey there! I'm NOVA, your personal assistant."
-speak(welcome_message)
+speak(welcome_message)  # Uncomment if speak function is defined
 
-
+# Status label
 status_label = Label(root, text="Waiting for activation...", font=("Arial", 12), bg="white", fg="black")
 status_label.pack(pady=10)
 
+# Theme toggle button
 theme_button = Button(root, image=moon_icon, command=toggle_theme, bd=0, bg=root.cget("bg"), activebackground=root.cget("bg"))
-theme_button.config(width=25, height=25) 
+theme_button.config(width=25, height=25)
 theme_button.place(relx=0.95, rely=0.02, anchor="ne")
+
 
 # Main assistant loop
 def assistant_loop():
