@@ -13,6 +13,8 @@ import requests
 import pywhatkit as kit
 import pyautogui
 import subprocess
+import platform
+
 # Initialize speech engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
@@ -93,6 +95,22 @@ def get_definition(word):
         return "Something went wrong while fetching the definition."
 
 
+
+def open_camera():
+    try:
+        system_os = platform.system()
+        if system_os == "Windows":
+            subprocess.run("start microsoft.windows.camera:", shell=True)  # Windows
+        elif system_os == "Darwin":  # macOS
+            subprocess.run(["open", "/System/Applications/Photo Booth.app"], check=True)
+        elif system_os == "Linux":
+            subprocess.run(["xdg-open", "cheese"], check=True)  # Opens Cheese on Linux
+        else:
+            speak("Unsupported operating system")
+            return
+    except Exception as e:
+        print("Error opening camera:", str(e))
+        speak("Error opening camera")
 #email
 def sendEmail(to, content):
     try:
@@ -216,7 +234,7 @@ def find_and_open_file():
             speak(f"Opening {file_name}")
             break  # Exit loop after opening file
         else:
-            print("❌ File not found.")  # Debugging output
+            print("File not found.")  # Debugging output
             speak("I couldn't find the file. Please try again.")
             break  # Exit if no file is found
 
@@ -475,7 +493,7 @@ def perform_task(query):
         else:
             speak("Sorry, I couldn't capture your search query.")
 
-    elif 'tell me the time' in query:
+    elif 'time' in query:
         speak(f"The time is {datetime.now().strftime('%H:%M:%S')}")
 
     elif 'send email' in query:
@@ -541,6 +559,9 @@ def perform_task(query):
     elif "screenshot" in query:
         take_screenshot()
         speak("screenshort saved successfully at pictures folder")
+    elif "camera" in query:
+        open_camera()
+        speak("Camera opened")
     elif 'open' in query:
             response = open_app(query)
             speak(response)
