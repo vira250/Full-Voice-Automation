@@ -14,27 +14,72 @@ import pywhatkit as kit
 import pyautogui
 import subprocess
 import platform
+import json
+from PIL import Image, ImageTk
 
 # Initialize speech engine
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[1].id)
 
+# Default user name
 user_name = "User"
+user_data_file = "nova_user_data.json"
 
 API_KEY = "ac153b54bb4ac582c90f4b9f2dd2fa3f"
 BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
 NEWS_API_KEY = "3a61ba9c823946e593aecd921785aacf"
 
+# Colors for the modern UI
+DARK_BG = "#1E1E2E"
+LIGHT_BG = "#F5F5F7"
+ACCENT_COLOR = "#7B68EE"  # Purple accent
+TEXT_COLOR_DARK = "#FFFFFF"
+TEXT_COLOR_LIGHT = "#333333"
+NOVA_TEXT_COLOR = "#7B68EE"  # Purple for NOVA's messages
+USER_TEXT_COLOR = "#4A90E2"  # Blue for user's messages
+BUTTON_COLOR = "#7B68EE"
+BUTTON_TEXT_COLOR = "#FFFFFF"
+
+# Theme state
+dark_mode = False
+
+# Function to save user data to JSON file
+def save_user_data():
+    data = {
+        "user_name": user_name
+    }
+    try:
+        with open(user_data_file, 'w') as file:
+            json.dump(data, file)
+        print(f"User data saved: {user_name}")
+    except Exception as e:
+        print(f"Error saving user data: {e}")
+
+# Function to load user data from JSON file
+def load_user_data():
+    global user_name
+    try:
+        if os.path.exists(user_data_file):
+            with open(user_data_file, 'r') as file:
+                data = json.load(file)
+                user_name = data.get("user_name", "User")
+                print(f"User data loaded: {user_name}")
+                return True
+        return False
+    except Exception as e:
+        print(f"Error loading user data: {e}")
+        return False
+
 # Speak function
 def speak(audio):
-    chat_box.insert(END, "NOVA: ", "nova") 
+    chat_box.insert(END, "NOVA: ", "nova_tag") 
     root.update()
     
     for letter in audio:
         chat_box.insert(END, letter, "nova")
         root.update()
-        time.sleep(0.02)  # Adjust typing speed (lower = faster)
+        time.sleep(0.01)  # Slightly faster typing speed
     
     chat_box.insert(END, "\n")  
     chat_box.yview(END)
@@ -79,7 +124,6 @@ def open_app(query):
             return f"Opening {app}"
     return "Application not found!"
 
-#def
 def get_definition(word):
     try:
         url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
@@ -93,8 +137,6 @@ def get_definition(word):
             return "Sorry, I couldn't find the definition for that word."
     except Exception as e:
         return "Something went wrong while fetching the definition."
-
-
 
 def open_camera():
     try:
@@ -111,7 +153,7 @@ def open_camera():
     except Exception as e:
         print("Error opening camera:", str(e))
         speak("Error opening camera")
-#email
+
 def sendEmail(to, content):
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -238,7 +280,6 @@ def find_and_open_file():
             speak("I couldn't find the file. Please try again.")
             break  # Exit if no file is found
 
-#quotes
 def get_random_quote():
     try:
         url = "https://zenquotes.io/api/random"
@@ -254,8 +295,6 @@ def get_random_quote():
     except Exception as e:
         return "Something went wrong while fetching a quote."
 
-
-#cal
 def calculate_math(expression):
     try:
         # Remove any unwanted characters for safety
@@ -266,7 +305,6 @@ def calculate_math(expression):
     except Exception as e:
         speak("Sorry, I couldn't calculate that.")
 
-#weather
 def get_weather(city):
     url = f"{BASE_URL}?q={city}&appid={API_KEY}&units=metric"
     
@@ -284,10 +322,7 @@ def get_weather(city):
         print(f"Error: {e}")  # Debugging: Print the error
         speak("Sorry, I couldn't retrieve the weather data.")
 
-
-#news
 def get_news():
-    
     url_top_headlines = f"https://newsapi.org/v2/top-headlines?country=in&apiKey={NEWS_API_KEY}"
     response = requests.get(url_top_headlines).json()
 
@@ -313,7 +348,6 @@ def get_news():
     for i, article in enumerate(articles[:3]):
         news_list.append(f"{i+1}. {article['title']} - {article['source']['name']}")
     return "\n".join(news_list)
-    
 
 def take_screenshot():
     """Takes a screenshot and saves it in the OneDrive Screenshots folder"""
@@ -338,49 +372,57 @@ def take_screenshot():
     speak(confirmation_text)
 
     return filepath  # Return the file path for debugging
-# === SCREEN RECORDING FUNCTIONS ===
-
 
 # Take voice command
 def takecommand():
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        status_label.config(text="Listening...", fg="green")
-        root.update()
-        r.pause_threshold = 1
+        update_status("Listening...", "green")
+        r.pause_threshold = 1 
         audio = r.listen(source)
 
         try:
+            update_status("Processing...", "#FFA500")  # Orange color for processing
             query = r.recognize_google(audio, language='en-US').lower()
             if query:
-                chat_box.insert(END, f"You: {query}\n", "user")
+                chat_box.insert(END, f"You: ", "user_tag")
+                chat_box.insert(END, f"{query}\n", "user")
+                update_status("Ready", "#4CAF50")  # Green color for ready
                 return query
         except sr.UnknownValueError:
+            update_status("Ready", "#4CAF50")
             speak("Sorry, I didn't catch that. Can you repeat?")
             return ""  # Return empty string instead of "None"
         except sr.RequestError:
+            update_status("Error", "#F44336")  # Red color for error
             speak("Sorry, I couldn't connect to Google services.")
             return ""
 
     return ""
 
+def update_status(text, color):
+    status_label.config(text=text, fg=color)
+    root.update()
 
 def smooth_scroll():
     chat_box.after(100, lambda: chat_box.yview_moveto(1.0)) 
 
-
 # Ask for user's name
 def get_user_name():
     global user_name
+    
+    # Check if we already have the user's name saved
+    if load_user_data():
+        speak(f"Welcome back, {user_name}!")
+        return
+    
     speak("What should I call you?")
     name = takecommand()
     if name and name != "None":
         user_name = name.capitalize()
-        # speak(f"Alright, I will call you {user_name}.")
-        #chat_box.insert(END, f"NOVA: Alright, I will call you {user_name}.\n", "nova")
-        
+        # speak(f"Nice to meet you, {user_name}")
+        save_user_data()
 
-#joke
 def tell_joke():
     try:
         url = "https://icanhazdadjoke.com/"
@@ -396,7 +438,6 @@ def tell_joke():
     except Exception as e:
         speak("Something went wrong while fetching a joke.")
 
-
 def get_date_info():
     today = datetime.today()
     day_name = today.strftime("%A")  # Full weekday name (e.g., Sunday)
@@ -407,8 +448,6 @@ def get_day_info():
     today = datetime.today()
     return f"It's {today.strftime('%A')}."
 
-
-#fact
 def tell_fun_fact():
     try:
         url = "https://uselessfacts.jsph.pl/random.json?language=en"
@@ -422,7 +461,6 @@ def tell_fun_fact():
 
     except Exception as e:
         speak("Something went wrong while fetching a fun fact.")
-
 
 # Wishing function
 def wishme():
@@ -558,7 +596,7 @@ def perform_task(query):
         speak(quote)
     elif "screenshot" in query:
         take_screenshot()
-        speak("screenshort saved successfully at pictures folder")
+        speak("screenshot saved successfully at pictures folder")
     elif "camera" in query:
         open_camera()
         speak("Camera opened")
@@ -572,72 +610,138 @@ def perform_task(query):
 # Ask if user needs anything else
 def ask_for_more():
     speak("Do you need anything else?")  
-    response = takecommand().strip()
+    response = takecommand().strip().lower()
 
-    if any(word in response for word in ["yeah", "sure", "okay", "yup", "of course", "yes"]):
+    # Check for positive responses
+    positive_responses = ["yeah", "sure", "okay", "yup", "of course", "yes", "yep", "y", "ya", "yea"]
+    # Check for negative responses
+    negative_responses = ["no", "nope", "nah", "not now", "no thanks", "n", "negative"]
+    
+    if any(word in response for word in positive_responses):
         speak("Okay, what do you need?")
         command = takecommand()
         if command != "None":
             perform_task(command)
-    else:
-        speak("Okay, I'll be here when you need me. Just say 'NOVA'")
-        # listen_for_activation()
+    elif any(word in response for word in negative_responses):
+        speak(f"Okay {user_name}, I'll be here if you need me.")
         os._exit(0)
+        root.quit()
+    else:
+        speak("I didn't understand your response. Please say yes or no.")
+        ask_for_more()  # Ask again if the response wasn't clear
 
 # Listen for activation command
 def listen_for_activation():
+    update_status("Waiting for activation...", "#808080")  # Gray color for waiting
     while True:
         query = takecommand()
         if query and any(word in query for word in ["hey nova", "hi nova", "yo nova", "nova", "sup nova"]):
+            update_status("Active", "#4CAF50")  # Green color for active
             speak("Yes? How can I help?")  
             command = takecommand()
             if command and command != "None":
                 perform_task(command)
             break  # Exit the loop to prevent infinite recursion
 
+# Toggle dark/light mode
+def toggle_theme():
+    global dark_mode
+    dark_mode = not dark_mode
+    
+    if dark_mode:
+        # Dark mode
+        root.configure(bg=DARK_BG)
+        header_frame.configure(bg=DARK_BG)
+        header_label.configure(bg=DARK_BG, fg=TEXT_COLOR_DARK)
+        frame.configure(bg=DARK_BG)
+        chat_box.configure(bg=DARK_BG, fg=TEXT_COLOR_DARK, insertbackground=TEXT_COLOR_DARK)
+        status_label.configure(bg=DARK_BG)
+        theme_button.configure(text="🌞 Light Mode")
+        
+        # Update text colors for dark mode
+        chat_box.tag_configure("user", foreground=USER_TEXT_COLOR)
+        chat_box.tag_configure("nova", foreground=NOVA_TEXT_COLOR)
+        chat_box.tag_configure("user_tag", foreground=USER_TEXT_COLOR, font=("Arial", 12, "bold"))
+        chat_box.tag_configure("nova_tag", foreground=NOVA_TEXT_COLOR, font=("Arial", 12, "bold"))
+    else:
+        # Light mode
+        root.configure(bg=LIGHT_BG)
+        header_frame.configure(bg=LIGHT_BG)
+        header_label.configure(bg=LIGHT_BG, fg=TEXT_COLOR_LIGHT)
+        frame.configure(bg=LIGHT_BG)
+        chat_box.configure(bg=LIGHT_BG, fg=TEXT_COLOR_LIGHT, insertbackground=TEXT_COLOR_LIGHT)
+        status_label.configure(bg=LIGHT_BG)
+        theme_button.configure(text="🌙 Dark Mode")
+        
+        # Update text colors for light mode
+        chat_box.tag_configure("user", foreground=USER_TEXT_COLOR)
+        chat_box.tag_configure("nova", foreground=NOVA_TEXT_COLOR)
+        chat_box.tag_configure("user_tag", foreground=USER_TEXT_COLOR, font=("Arial", 12, "bold"))
+        chat_box.tag_configure("nova_tag", foreground=NOVA_TEXT_COLOR, font=("Arial", 12, "bold"))
+
 # Initialize Tkinter window
 root = tk.Tk()
 root.title("NOVA - Voice Assistant")
-root.geometry("700x550")
+root.geometry("800x600")
+root.configure(bg=LIGHT_BG)
 
+# Create a header frame
+header_frame = Frame(root, bg=LIGHT_BG)
+header_frame.pack(fill="x", padx=10, pady=5)
 
+# Header label with logo
+header_label = Label(header_frame, text="NOVA", font=("Arial", 24, "bold"), fg=ACCENT_COLOR, bg=LIGHT_BG)
+header_label.pack(side="left", pady=10)
 
-dark_mode = False  # Default theme: Light mode
+# Subtitle label
+subtitle_label = Label(header_frame, text="Your Voice Assistant", font=("Arial", 14), fg=TEXT_COLOR_LIGHT, bg=LIGHT_BG)
+subtitle_label.pack(side="left", padx=10, pady=10)
 
-# Header label
-header_label = Label(root, text="NOVA - Voice Assistant", font=("Arial", 14, "bold"), bd=0, highlightthickness=0)
-header_label.pack(pady=5)
+# Theme toggle button
+theme_button = Button(header_frame, text="🌙 Dark Mode", command=toggle_theme, 
+                     bg=ACCENT_COLOR, fg=BUTTON_TEXT_COLOR, font=("Arial", 10),
+                     relief="flat", padx=10, pady=5)
+theme_button.pack(side="right", pady=10, padx=10)
 
-# Chat frame
-frame = Frame(root, bg="white")
-frame.pack(padx=10, pady=5, fill=BOTH, expand=True)
+# Chat frame with rounded corners
+frame = Frame(root, bg=LIGHT_BG, bd=1, relief="solid")
+frame.pack(padx=20, pady=10, fill=BOTH, expand=True)
 
-# Chatbox
-chat_box = Text(frame, wrap="word", height=20, width=70, font=("Arial", 12), bg="white", fg="black")
+# Chatbox with custom styling
+chat_box = Text(frame, wrap="word", height=20, width=70, font=("Arial", 12), 
+               bg=LIGHT_BG, fg=TEXT_COLOR_LIGHT, bd=0, padx=10, pady=10,
+               insertbackground=TEXT_COLOR_LIGHT)
 scrollbar = Scrollbar(frame, command=chat_box.yview)
 chat_box.config(yscrollcommand=scrollbar.set)
 scrollbar.pack(side="right", fill="y")
 chat_box.pack(side="left", fill="both", expand=True)
 
-# Text color configurations
-chat_box.tag_config("user", foreground="black")
-chat_box.tag_config("nova", foreground="gray")
+# Text color configurations with bold tags for names
+chat_box.tag_configure("user", foreground=USER_TEXT_COLOR)
+chat_box.tag_configure("nova", foreground=NOVA_TEXT_COLOR)
+chat_box.tag_configure("user_tag", foreground=USER_TEXT_COLOR, font=("Arial", 12, "bold"))
+chat_box.tag_configure("nova_tag", foreground=NOVA_TEXT_COLOR, font=("Arial", 12, "bold"))
 
-# Welcome message
-welcome_message = "Hey there! I'm NOVA, your personal assistant."
-speak(welcome_message)  # Uncomment if speak function is defined
-
-# Status label
-status_label = Label(root, text="Waiting for activation...", font=("Arial", 12), bg="white", fg="black")
+# Status label with modern styling
+status_label = Label(root, text="Starting up...", font=("Arial", 12), bg=LIGHT_BG, fg="#808080",
+                    padx=10, pady=5)
 status_label.pack(pady=10)
 
+# Footer with version info
+footer_label = Label(root, text="NOVA v2.0", font=("Arial", 8), fg="#888888", bg=LIGHT_BG)
+footer_label.pack(side="bottom", pady=5)
 
-
+# Welcome message
+# welcome_message = "Hey there! I'm NOVA, your personal assistant."
 
 # Main assistant loop
 def assistant_loop():
+    update_status("Starting up...", "#FFA500")
     get_user_name()
+    # speak(welcome_message)
     wishme()
+    update_status("Waiting for activation...", "#808080")
     listen_for_activation()
+
 root.after(1000, assistant_loop)
 root.mainloop()
