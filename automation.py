@@ -615,7 +615,7 @@ def ask_for_more():
     # Check for positive responses
     positive_responses = ["yeah", "sure", "okay", "yup", "of course", "yes", "yep", "y", "ya", "yea"]
     # Check for negative responses
-    negative_responses = ["no", "nope", "nah", "not now", "no thanks", "n", "negative"]
+    negative_responses = ["no", "nope", "nah", "not now", "no thank you", "thanks", "n", "negative"]
     
     if any(word in response for word in positive_responses):
         speak("Okay, what do you need?")
@@ -627,7 +627,7 @@ def ask_for_more():
         os._exit(0)
         root.quit()
     else:
-        speak("I didn't understand your response. Please say yes or no.")
+        # speak("I didn't understand your response. Please say yes or no.")
         ask_for_more()  # Ask again if the response wasn't clear
 
 # Listen for activation command
