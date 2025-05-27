@@ -26,9 +26,9 @@ engine.setProperty('voice', voices[1].id)
 user_name = "User"
 user_data_file = "nova_user_data.json"
 
-API_KEY = "ac153b54bb4ac582c90f4b9f2dd2fa3f"
+API_KEY = "YOUR_API_KEY"
 BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
-NEWS_API_KEY = "3a61ba9c823946e593aecd921785aacf"
+NEWS_API_KEY = "YOUR_API_KEY"
 
 # Colors for the modern UI
 DARK_BG = "#1E1E2E"
@@ -159,8 +159,8 @@ def sendEmail(to, content):
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.ehlo()
         server.starttls()
-        server.login("jviraj666@gmail.com", "whhjhqatxyaejbrc")  # Avoid hardcoding credentials in real applications
-        server.sendmail("jviraj666@gmail.com", to, content)
+        server.login("YOUR_EMAIL_ID", "YOUR_APP_KEY")  # Avoid hardcoding credentials in real applications
+        server.sendmail("YOUR_EMAIL_ID", to, content)
         server.close()
         speak("Email has been sent successfully!")
     except Exception as e:
