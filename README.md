@@ -47,5 +47,6 @@
 
 ## ScreenShot
 
-![image](https://github.com/user-attachments/assets/8a88aea5-6d4d-467f-86aa-2ff82f2e00c8)
+![image](https://github.com/user-attachments/assets/5d5a5cf9-dbfd-41c1-bc90-921a2d7384b8)
+
 
